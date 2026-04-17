@@ -1,12 +1,10 @@
 # Sistema de Gestión de Tickets de Soporte
 
 Proyecto full stack con frontend y backend usando:
-- Node.js
-- TypeScript
+- Node.js + TypeScript
 - Express.js
-- Prisma ORM
+- Prisma ORM + SQLite
 - React + Vite
-- SQLite (fácil de ejecutar localmente)
 
 > Si luego quieres, puedes cambiar SQLite por PostgreSQL ajustando `provider` y `DATABASE_URL` en Prisma.
 
@@ -19,10 +17,8 @@ Proyecto full stack con frontend y backend usando:
 
 - Registro e inicio de sesión con JWT
 - Roles: `USER` y `TECHNICIAN`
-- Crear tickets
-- Listar tickets
-- Ver detalle de ticket
-- Cambiar estado y prioridad
+- Crear, listar y ver detalle de tickets
+- Cambiar estado y prioridad (solo técnicos)
 - Agregar comentarios
 - Gestión de categorías
 
@@ -83,22 +79,28 @@ Después de correr el seed:
 
 ### Categorías
 - `GET /api/categories`
-- `POST /api/categories` (TECHNICIAN)
+- `POST /api/categories` _(solo TECHNICIAN)_
 
 ### Tickets
 - `GET /api/tickets`
 - `GET /api/tickets/:id`
 - `POST /api/tickets`
-- `PATCH /api/tickets/:id`
+- `PATCH /api/tickets/:id` _(solo TECHNICIAN)_
 
 ### Comentarios
 - `POST /api/tickets/:id/comments`
 
-## Recomendaciones para GitHub
+## Cambios en esta versión
 
-Sube todo el contenido del proyecto excepto:
-- `node_modules/`
-- `backend/dev.db`
-- `.env`
-- `dist/`
+### Bugs corregidos
+1. **Error HTTP incorrecto**: El middleware de errores devolvía 500 para errores de negocio (ticket no encontrado, sin permisos). Ahora devuelve 404 o 403 correctamente.
+2. **Vulnerabilidad de seguridad**: El registro permitía que el cliente enviara `role: TECHNICIAN` y escalara privilegios. Ahora el rol siempre es `USER` en el registro.
+3. **Bug Prisma `updateTicket`**: El spread de los datos de Zod dejaba campos `undefined`, lo que impedía que `technicianId: null` funcionara para desasignar un técnico. Ahora se construye el objeto de actualización explícitamente.
+4. **Bug React `useEffect`**: `loadTicket` en `TicketDetailPage` no estaba en el array de dependencias. Convertido a `useCallback` y añadido correctamente.
 
+### Mejoras
+- Etiquetas de estado y prioridad en español con badges de colores
+- Indicador de carga en el dashboard
+- Columna de fecha en la tabla de tickets
+- Comentarios del técnico destacados visualmente
+- `select` del técnico con etiquetas en español en el formulario de actualización

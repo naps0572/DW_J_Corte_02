@@ -90,9 +90,26 @@ export async function updateTicket(ticketId: number, input: unknown, role: Role)
 
   const data = updateTicketSchema.parse(input);
 
+  // Construimos el objeto de actualización explícitamente para que
+  // technicianId: null desconecte correctamente al técnico en Prisma
+  // (un spread de un objeto Zod deja los campos undefined fuera, lo que
+  // haría que Prisma ignore la desvinculación)
+  const updateData: {
+    status?: typeof data.status;
+    priority?: typeof data.priority;
+    technicianId?: number | null;
+    categoryId?: number;
+  } = {};
+
+  if (data.status !== undefined) updateData.status = data.status;
+  if (data.priority !== undefined) updateData.priority = data.priority;
+  if (data.categoryId !== undefined) updateData.categoryId = data.categoryId;
+  // technicianId puede ser null (desasignar) o un número (asignar)
+  if ('technicianId' in data) updateData.technicianId = data.technicianId ?? null;
+
   return prisma.ticket.update({
     where: { id: ticketId },
-    data,
+    data: updateData,
     include: {
       category: true,
       creator: { select: { id: true, name: true, email: true } },

@@ -7,8 +7,8 @@ import { generateToken } from '../utils/jwt';
 const registerSchema = z.object({
   name: z.string().min(2),
   email: z.string().email(),
-  password: z.string().min(6),
-  role: z.nativeEnum(Role).optional()
+  password: z.string().min(6)
+  // El rol NO se acepta desde el cliente: todos los registros son USER
 });
 
 const loginSchema = z.object({
@@ -29,7 +29,7 @@ export async function registerUser(input: unknown) {
       name: data.name,
       email: data.email,
       password: await hashPassword(data.password),
-      role: data.role || Role.USER
+      role: Role.USER // Siempre USER; los técnicos se crean desde el seed/admin
     }
   });
 

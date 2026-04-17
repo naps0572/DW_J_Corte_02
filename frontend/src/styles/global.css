@@ -124,3 +124,44 @@ th, td {
   .detail-grid { grid-template-columns: 1fr; }
   .section-header, .navbar { flex-direction: column; align-items: flex-start; }
 }
+
+/* ── Badges ───────────────────────────────────────────── */
+.badge {
+  display: inline-block;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.badge-open       { background: #eff8ff; color: #1849a9; }
+.badge-inprogress { background: #fffaeb; color: #b54708; }
+.badge-resolved   { background: #ecfdf3; color: #027a48; }
+.badge-closed     { background: #f2f4f7; color: #344054; }
+.badge-low        { background: #f2f4f7; color: #344054; }
+.badge-medium     { background: #fffaeb; color: #b54708; }
+.badge-high       { background: #fef3f2; color: #b42318; }
+.badge-tech       { background: #f4f3ff; color: #5925dc; margin-left: 0.4rem; }
+
+/* ── Stat card numbers ───────────────────────────────── */
+.stat-card strong { font-size: 2rem; }
+.text-open        { color: #1849a9; }
+.text-inprogress  { color: #b54708; }
+.text-resolved    { color: #027a48; }
+
+/* ── Comment from technician ─────────────────────────── */
+.comment-tech {
+  border-color: #d9d6fe;
+  background: #fafafe;
+}
+
+/* ── Form label wrappers ─────────────────────────────── */
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #344054;
+}
+label select, label input { margin-top: 0; }
