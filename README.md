@@ -90,17 +90,4 @@ Después de correr el seed:
 ### Comentarios
 - `POST /api/tickets/:id/comments`
 
-## Cambios en esta versión
 
-### Bugs corregidos
-1. **Error HTTP incorrecto**: El middleware de errores devolvía 500 para errores de negocio (ticket no encontrado, sin permisos). Ahora devuelve 404 o 403 correctamente.
-2. **Vulnerabilidad de seguridad**: El registro permitía que el cliente enviara `role: TECHNICIAN` y escalara privilegios. Ahora el rol siempre es `USER` en el registro.
-3. **Bug Prisma `updateTicket`**: El spread de los datos de Zod dejaba campos `undefined`, lo que impedía que `technicianId: null` funcionara para desasignar un técnico. Ahora se construye el objeto de actualización explícitamente.
-4. **Bug React `useEffect`**: `loadTicket` en `TicketDetailPage` no estaba en el array de dependencias. Convertido a `useCallback` y añadido correctamente.
-
-### Mejoras
-- Etiquetas de estado y prioridad en español con badges de colores
-- Indicador de carga en el dashboard
-- Columna de fecha en la tabla de tickets
-- Comentarios del técnico destacados visualmente
-- `select` del técnico con etiquetas en español en el formulario de actualización
