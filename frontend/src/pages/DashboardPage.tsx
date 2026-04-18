@@ -1,38 +1,27 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { apiFetch } from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
 
 interface TicketUser { id: number; name: string; email: string; }
 interface Category { id: number; name: string; }
-interface Comment { id: number; message: string; }
-
 interface Ticket {
-  id: number;
-  title: string;
-  description: string;
+  id: number; title: string; description: string;
   status: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED';
   priority: 'LOW' | 'MEDIUM' | 'HIGH';
   createdAt: string;
-  creator: TicketUser;
-  technician?: TicketUser | null;
-  category: Category;
-  comments: Comment[];
+  creator: TicketUser; technician?: TicketUser | null;
+  category: Category; comments: { id: number }[];
 }
 
-const STATUS_LABELS: Record<Ticket['status'], string> = {
-  OPEN: 'Abierto', IN_PROGRESS: 'En proceso', RESOLVED: 'Resuelto', CLOSED: 'Cerrado'
-};
-const PRIORITY_LABELS: Record<Ticket['priority'], string> = {
-  LOW: 'Baja', MEDIUM: 'Media', HIGH: 'Alta'
-};
-const STATUS_CLASS: Record<Ticket['status'], string> = {
-  OPEN: 'badge badge-open', IN_PROGRESS: 'badge badge-inprogress',
-  RESOLVED: 'badge badge-resolved', CLOSED: 'badge badge-closed'
-};
-const PRIORITY_CLASS: Record<Ticket['priority'], string> = {
-  LOW: 'badge badge-low', MEDIUM: 'badge badge-medium', HIGH: 'badge badge-high'
-};
+const STATUS_LABEL = { OPEN: 'Abierto', IN_PROGRESS: 'En proceso', RESOLVED: 'Resuelto', CLOSED: 'Cerrado' };
+const STATUS_CLASS = { OPEN: 'badge-open', IN_PROGRESS: 'badge-progress', RESOLVED: 'badge-resolved', CLOSED: 'badge-closed' };
+const PRIORITY_LABEL = { LOW: 'Baja', MEDIUM: 'Media', HIGH: 'Alta' };
+const PRIORITY_CLASS = { LOW: 'badge-low', MEDIUM: 'badge-medium', HIGH: 'badge-high' };
+
+function initials(name: string) {
+  return name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
+}
 
 export function DashboardPage() {
   const { token, user } = useAuth();
@@ -40,80 +29,132 @@ export function DashboardPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    async function loadTickets() {
-      setLoading(true);
-      try {
-        const data = await apiFetch<Ticket[]>('/tickets', { token });
-        setTickets(data);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'No se pudieron cargar los tickets');
-      } finally {
-        setLoading(false);
-      }
+  const loadTickets = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await apiFetch<Ticket[]>('/tickets', { token });
+      setTickets(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudieron cargar los tickets');
+    } finally {
+      setLoading(false);
     }
-    loadTickets();
   }, [token]);
+
+  useEffect(() => { loadTickets(); }, [loadTickets]);
 
   const totals = useMemo(() => ({
     total: tickets.length,
-    open: tickets.filter((t) => t.status === 'OPEN').length,
-    inProgress: tickets.filter((t) => t.status === 'IN_PROGRESS').length,
-    resolved: tickets.filter((t) => t.status === 'RESOLVED').length
+    open: tickets.filter(t => t.status === 'OPEN').length,
+    inProgress: tickets.filter(t => t.status === 'IN_PROGRESS').length,
+    resolved: tickets.filter(t => t.status === 'RESOLVED').length,
   }), [tickets]);
 
   return (
-    <section>
-      <div className="grid cards-grid">
-        <div className="card stat-card"><h3>Total</h3><strong>{totals.total}</strong></div>
-        <div className="card stat-card"><h3>Abiertos</h3><strong className="text-open">{totals.open}</strong></div>
-        <div className="card stat-card"><h3>En proceso</h3><strong className="text-inprogress">{totals.inProgress}</strong></div>
-        <div className="card stat-card"><h3>Resueltos</h3><strong className="text-resolved">{totals.resolved}</strong></div>
+    <div>
+      <div className="page-header">
+        <div>
+          <h2>{user?.role === 'TECHNICIAN' ? 'Panel de técnico' : 'Mi panel'}</h2>
+          <p>Consulta y da seguimiento a los casos de soporte</p>
+        </div>
+        <Link to="/tickets/new" className="btn btn-primary">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="8" y1="2" x2="8" y2="14"/><line x1="2" y1="8" x2="14" y2="8"/></svg>
+          Nuevo ticket
+        </Link>
+      </div>
+
+      <div className="stats-grid">
+        <div className="stat-card">
+          <div className="stat-label">Total tickets</div>
+          <div className="stat-value">{totals.total}</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label">Abiertos</div>
+          <div className="stat-value indigo">{totals.open}</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label">En proceso</div>
+          <div className="stat-value amber">{totals.inProgress}</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label">Resueltos</div>
+          <div className="stat-value green">{totals.resolved}</div>
+        </div>
       </div>
 
       <div className="card">
-        <div className="section-header">
-          <div>
-            <h2>{user?.role === 'TECHNICIAN' ? 'Todos los tickets' : 'Mis tickets'}</h2>
-            <p>Consulta el detalle y seguimiento de los casos.</p>
+        <div className="card-header">
+          <h3>{user?.role === 'TECHNICIAN' ? 'Todos los tickets' : 'Mis tickets'}</h3>
+          <div className="card-actions">
+            <span style={{ fontSize: '12px', color: '#9CA3AF' }}>{tickets.length} registros</span>
           </div>
-          <Link className="primary-link" to="/tickets/new">+ Crear ticket</Link>
         </div>
 
-        {error && <div className="alert error">{error}</div>}
+        {error && <div className="alert alert-error" style={{ margin: '12px 16px' }}>{error}</div>}
 
         {loading ? (
-          <div className="centered">Cargando tickets...</div>
+          <div className="centered" style={{ minHeight: '160px' }}>
+            <div className="spinner"></div>
+            Cargando tickets...
+          </div>
         ) : (
           <div className="table-wrapper">
             <table>
               <thead>
                 <tr>
-                  <th>ID</th><th>Título</th><th>Categoría</th><th>Estado</th>
-                  <th>Prioridad</th><th>Solicitante</th><th>Fecha</th><th>Acción</th>
+                  <th>#</th>
+                  <th>Título</th>
+                  <th>Categoría</th>
+                  <th>Estado</th>
+                  <th>Prioridad</th>
+                  <th>Solicitante</th>
+                  <th>Fecha</th>
+                  <th></th>
                 </tr>
               </thead>
               <tbody>
                 {tickets.map((ticket) => (
                   <tr key={ticket.id}>
-                    <td>#{ticket.id}</td>
-                    <td>{ticket.title}</td>
-                    <td>{ticket.category.name}</td>
-                    <td><span className={STATUS_CLASS[ticket.status]}>{STATUS_LABELS[ticket.status]}</span></td>
-                    <td><span className={PRIORITY_CLASS[ticket.priority]}>{PRIORITY_LABELS[ticket.priority]}</span></td>
-                    <td>{ticket.creator.name}</td>
-                    <td>{new Date(ticket.createdAt).toLocaleDateString('es-CO')}</td>
-                    <td><Link to={`/tickets/${ticket.id}`}>Ver detalle</Link></td>
+                    <td className="td-id">#{ticket.id}</td>
+                    <td style={{ fontWeight: 500, color: '#111827', maxWidth: '220px' }}>
+                      <span style={{ display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {ticket.title}
+                      </span>
+                    </td>
+                    <td style={{ color: '#6B7280' }}>{ticket.category.name}</td>
+                    <td><span className={`badge ${STATUS_CLASS[ticket.status]}`}>{STATUS_LABEL[ticket.status]}</span></td>
+                    <td><span className={`badge ${PRIORITY_CLASS[ticket.priority]}`}>{PRIORITY_LABEL[ticket.priority]}</span></td>
+                    <td>
+                      <div className="creator-cell">
+                        <div className="mini-avatar">{initials(ticket.creator.name)}</div>
+                        <span style={{ color: '#374151' }}>{ticket.creator.name}</span>
+                      </div>
+                    </td>
+                    <td style={{ color: '#9CA3AF', fontSize: '12px', whiteSpace: 'nowrap' }}>
+                      {new Date(ticket.createdAt).toLocaleDateString('es-CO', { day: '2-digit', month: 'short' })}
+                    </td>
+                    <td>
+                      <Link to={`/tickets/${ticket.id}`} style={{ fontSize: '12px', fontWeight: 600, color: '#4F46E5', whiteSpace: 'nowrap' }}>
+                        Ver →
+                      </Link>
+                    </td>
                   </tr>
                 ))}
                 {!tickets.length && (
-                  <tr><td colSpan={8}>No hay tickets registrados todavía.</td></tr>
+                  <tr className="td-empty">
+                    <td colSpan={8}>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#D1D5DB" strokeWidth="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><line x1="8" y1="9" x2="16" y2="9"/><line x1="8" y1="13" x2="13" y2="13"/></svg>
+                        No hay tickets registrados todavía.
+                      </div>
+                    </td>
+                  </tr>
                 )}
               </tbody>
             </table>
           </div>
         )}
       </div>
-    </section>
+    </div>
   );
 }
